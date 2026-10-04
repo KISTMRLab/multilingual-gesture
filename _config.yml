@@ -1,0 +1,17 @@
+title: "Multilingual GestureCLR"
+description: "More gesture variety supports multilingual digital-human interaction."
+markdown: kramdown
+kramdown:
+  input: GFM
+exclude:
+  - src
+  - tests
+  - .venv
+  - data
+  - runs
+  - outputs
+  - checkpoints
+  - pyproject.toml
+  - requirements.txt
+  - package.json
+  - package-lock.json
