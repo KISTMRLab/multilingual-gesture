@@ -1,0 +1,22 @@
+Initial generation prompt
+
+Use case: scientific-educational. Produce an outstanding publication-quality graphical abstract for a research GitHub README. Wide landscape high-resolution canvas. Visual family: the admired Wearable MR Agent graphic—white background, deep navy elegant typography, muted teal/blue/indigo accents, delicate panel borders and restrained amber highlights. Improve that baseline: fewer words, stronger hierarchy, spacious composition, one instantly clear research narrative. Beautiful flat vector-like scientific graphics, crisp arrows, precise alignment, refined small icons, selective wireframe human/face or motion-sequence glyphs. Research figure, not decorative website artwork. No photorealistic people, cartoon characters, scenic illustration, neon, glossy 3D boxes, watermark, invented quantitative charts or unsupported benefits. Labels must be large and legible. Exact spelling. Arrows encode actual data dependencies; no stray or duplicate connectors. No caption about image generation or creation tools.
+Title exactly "Multilingual Co-Speech Gestures"
+Subtitle exactly "Expand gesture variety. Reuse an English rule base across languages."
+Create two large clearly labeled lanes—offline construction above, multilingual runtime below—with expanded-library story visually central.
+Upper "01 · Build a diverse gesture rule base":
+Two complementary sources at far left: "English monologue video" with timed text + 2D skeleton glyphs, and "Captured 3D motion" with short motion-strip glyphs.
+Captured motion → "Gesture-unit extraction" → "3D units".
+2D video poses and 3D units meet at "GestureCLR" (subtitle "Contrastive 2D–3D matching").
+Matched units → "Gesture clustering", shown as 3–4 small distinct pose families inside subtly colored clusters. Video transcript plus matched cluster IDs feed a cylinder "English text → gesture-cluster rules".
+Small original-paper scale labels near source/library: "2,035 gesture units" and "210,000 rules". No accuracy/performance charts.
+Lower "02 · Retrieve gestures across languages":
+"Korean text" → "Translate to English". A SECOND input "English text" bypasses translation and joins the SAME "6-word chunks" block. Then "Sentence-BERT" → "Semantic rule match" → "Select gesture cluster" → "Sample a recorded variation" → "Speech-aligned avatar motion".
+English rule cylinder feeds Semantic rule match. Gesture clusters feed recorded-variation sampling. Display three different recorded wireframe upper-body poses on the final motion strip to communicate variety. No novel-pose decoder.
+A small bottom evidence card "51-participant study" shows comparison labels "No gestures", "56-gesture library", "Expanded library", plus "Korean / English presentation". Do NOT invent effect sizes or imply all cultures/languages have been validated.
+Bottom takeaway exactly "One rule base • Diverse recorded motion • Translation-based language support".
+No direct multilingual learned encoder claim: runtime translates non-English text to English; GestureCLR is offline pose matching. Precise branching, no duplicate arrows.
+
+Refinement 1
+
+Edit this scientific graphical abstract while preserving its excellent navy/teal publication style, spacious two-lane composition and all correct method details. Fix only these issues: upper lane heading exactly '01 · Build a diverse gesture rule base' (ensure 'diverse' correctly spelled). Runtime '6-word chunks' card must display ONE complete six-word example exactly 'Today we explore these new ideas', instead of two-word fragments. Keep same input text/translation story. Add a clean thin arrow labeled 'Transcript' from English monologue video/transcript source to 'Video transcript + cluster IDs', because rule construction needs transcript as well as matched cluster IDs. Keep existing cluster-ID arrow. Avoid crossing labels or crowded wiring. Retain 2,035 units, 210,000 rules, GestureCLR offline matching, Korean-to-English translation with English bypass, Sentence-BERT semantic retrieval, recorded variation sampling and 51-participant study. No invented benefit, no image generation caption.

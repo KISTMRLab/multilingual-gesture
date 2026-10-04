@@ -8,9 +8,9 @@
 
 > More gesture variety supports multilingual digital-human interaction.
 
-![Method diagram from Figure 1 of the multilingual-gesture paper](paper-assets/method.png)
+![Graphical abstract: GestureCLR rule construction and translation-based multilingual gesture retrieval](paper-assets/graphical-abstract.png)
 
-*Original method figure from the paper: Figure 1, PDF page 4. Extracted for this research introduction; the diagram describes the original system, not verification of this reimplementation.*
+*Graphical abstract diagram. GestureCLR expands a clustered gesture library for translation-based multilingual retrieval.*
 
 ## Why this research
 
