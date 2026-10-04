@@ -54,6 +54,14 @@ Please cite the research paper when using its ideas; [download the BibTeX citati
 
 <!-- implementation-guide -->
 
+For an immediate browser example after installation, run `python scripts/prepare_viewer.py --out static/vendor` and `python scripts/demo_server.py --example`, then open the printed URL. Enter `결과를 보여 주세요` with language `ko` to see the explicit example translation and clustered motion retrieval. Author-created motion and illustrative vectors are labeled as examples; the prepared-data path below trains and loads GestureCLR.
+
+```bash
+python -m pip install -e .
+python scripts/prepare_viewer.py --out static/vendor
+python scripts/demo_server.py --example
+```
+
 Independent educational reimplementation of *Expanding Multilingual Co-Speech Interaction: The Impact of Enhanced Gesture Units in Text-to-Gesture Synthesis for Digital Humans* (Ali et al., IEEE Access 2025, DOI: [10.1109/ACCESS.2025.3596328](https://doi.org/10.1109/ACCESS.2025.3596328)). It follows the paper's actual multilingual design: translate input to English, then run English Sentence-BERT rule retrieval over GestureCLR-matched and clustered motion units. It does not redesign the system as a multilingual encoder.
 
 ### Setup and data contract
@@ -69,10 +77,26 @@ On Windows PowerShell, activate with `.\.venv\Scripts\Activate.ps1` instead of t
 Verify the pipeline offline before downloading data or encoders:
 
 ```bash
-python scripts/smoke.py
+python scripts/verify.py
 ```
 
-This generates every documented array plus a local 384-D SentenceTransformer fixture, then invokes the installed `extract-units`, `train`, `mine`, and multilingual `retrieve` CLI paths. It writes the result to `outputs/smoke/cli-sequence.json`. The local encoder replaces only downloadable Sentence-BERT weights; real public arrays and `all-MiniLM-L6-v2` use the same checkpoints and downstream contracts.
+This generates every documented array plus a local 384-D SentenceTransformer fixture, then invokes the installed `extract-units`, `train`, `mine`, and multilingual `retrieve` CLI paths. It writes the result to `outputs/verification/cli-sequence.json`. The local encoder replaces only downloadable Sentence-BERT weights; real public arrays and `all-MiniLM-L6-v2` use the same checkpoints and downstream contracts.
+
+### Prepare data and launch the multilingual demo
+
+`scripts/prepare_public_data.py` converts a licensed BVH plus timed JSONL words to 15 FPS neck-centered paired units, an English `wild.npz` projected-pose proxy and `speaker_motion.npy`. Use at least six seconds and retarget your skeleton to the script's documented joint names. A real wild-video input must replace the proxy with aligned video-estimated 2D pose and English text. Translate non-English queries with your own licensed service and save exact source-text to English-text mappings in `data/translations.json`; the demo refuses untranslated input.
+
+```bash
+python scripts/prepare_public_data.py --bvh data/licensed_motion.bvh --transcript data/english_words.jsonl --output-dir data/prepared
+multigesture train --pairs data/prepared/pairs.npz --epochs 20 --output checkpoints/gestureclr.pt
+multigesture mine --wild data/prepared/wild.npz --units data/prepared/units.npz --checkpoint checkpoints/gestureclr.pt --clusters 10 --output-prefix outputs/library
+python scripts/prepare_viewer.py --out static/vendor
+python scripts/demo_server.py --data-dir data/prepared --rules outputs/library.rules.jsonl --clusters outputs/library.clusters.npz --translations data/translations.json
+```
+
+The browser shows source text, the supplied English translation, six-word rule lookup, cluster choice, similarity and actual BVH-derived joint frames. It never routes non-English text directly into Sentence-BERT. Batch retrieval uses `multigesture retrieve`; `scripts/export_playback.py` joins its sequence to `units.npz`. A short local training run only checks that the paired-projection method learns from the user's data; it does not reproduce the paper's evaluation. `scripts/verify.py` uses random arrays and a local illustrative text encoder.
+
+The [wild pose-matching poster](https://github.com/ghazanPK/wild-pose-matching) introduces this GestureCLR rule-mining path; [RIDGE](https://github.com/ghazanPK/ridge) later uses a GestureCLR-derived motion branch. These are research links, not software imports.
 
 Prepare public data yourself. [Talking With Hands](https://github.com/facebookresearch/TalkingWithHands32M) can provide paired 3D motion for GestureCLR training; [BEAT](https://pantomatrix.github.io/BEAT/) is a public replacement for timed text/motion experiments. Follow each dataset's request process and license. Wild video data must be content you may download/process. No paper data, Korean-speaker capture, Papago credentials, model weights, or reported 2,035-unit/210,000-rule artifact is bundled.
 
@@ -90,7 +114,7 @@ Outputs keep source/English text, semantic similarity, cluster ID, chosen unit I
 
 ### Limits and license
 
-This repository starts after transcription, alignment, projection, and skeleton normalization. It does not call a commercial translation API, perform retargeting, synthesize speech, or render an avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed; datasets, pretrained models, translations, and animations keep their original licenses.
+This repository starts after transcription, alignment, projection, and skeleton normalization. It does not call a commercial translation API, perform retargeting, recover the original speech service, or retarget the original avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed; datasets, pretrained models, translations, and animations keep their original licenses.
 
 ### Citation
 
@@ -99,3 +123,7 @@ Machine-readable metadata is in [citation.bib](citation.bib).
 ```bibtex
 @article{ali2025multilingual, title={Expanding Multilingual Co-Speech Interaction: The Impact of Enhanced Gesture Units in Text-to-Gesture Synthesis for Digital Humans}, author={Ali, Ghazanfar and Kim, Woojoo and Anwar, Muhammad Shahid and Hwang, Jae-In and Choi, Ahyoung}, journal={IEEE Access}, volume={13}, pages={145144--145157}, year={2025}, doi={10.1109/ACCESS.2025.3596328}}
 ```
+
+### Optional local speech adapters
+
+The viewer can speak its query or transcribe user-selected audio. Browser voice and typed text work without model weights. Install `python -m pip install -e ".[speech]"` for local adapters. Obtain Kokoro files from [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) yourself: `config.json`, `kokoro-v1_0.pth` and `voices/af_heart.pt`. Set `KOKORO_MODEL_DIR` to their parent folder before launching the server. Follow [Kokoro's English phonemizer setup](https://github.com/hexgrad/kokoro), including espeak-ng where required, then choose Local Kokoro. For ASR, set `WHISPER_MODEL_DIR` to a user-downloaded [faster-whisper](https://github.com/SYSTRAN/faster-whisper) small model directory containing `model.bin` and its tokenizer/configuration files. ASR runs on CPU with INT8, requests word timestamps and VAD, and disables implicit model downloads. No speech model files or audio recordings are included in this repo.

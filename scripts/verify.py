@@ -37,7 +37,7 @@ def text_embedding(texts: list[str], width: int = 384) -> np.ndarray:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/smoke"))
+    parser.add_argument("--output-dir", type=Path, default=Path("outputs/verification"))
     args = parser.parse_args(); out = args.output_dir; out.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(11); rng = np.random.default_rng(11)
     pose2d = rng.normal(size=(6, 45, 8)).astype("float32")
