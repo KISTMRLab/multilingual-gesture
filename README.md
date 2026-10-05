@@ -55,18 +55,22 @@ Please cite the research paper when using its ideas; [download the BibTeX citati
 
 ![Multilingual Gesture runnable demo](demo-assets/preview.png)
 
-*Local demo with small starter examples; the capture illustrates the interface, not a reproduced paper benchmark.*
+*The prepared BEAT sequence shows local English retrieval with a small Korean translation fixture. This preview is not a paper benchmark.*
 
 From the repository root, using the Python environment described below:
 
 ```sh
 python -m pip install -e .
+python -m pip install -r scripts/requirements-demo.txt
 python scripts/start_demo.py
 ```
 
-Open **http://127.0.0.1:8080/**. A starter query and motion clip load automatically. Click **Play speech + gesture** to start both together, or change the text and click **Retrieve motion**. Stop cancels speech; scrubbing previews a pose without speaking. The launcher selects the bundled inputs automatically; it also builds the small authored index for RAG demos. Avatar demos prepare their pinned Three.js modules on first launch, so that step needs internet access. Model weights and public datasets are optional for the starter workflow and are prepared separately for real-data use.
+Open **http://127.0.0.1:8080/**. First launch downloads one official BEAT BVH and matching TextGrid, prepares nine clips and disjoint paired windows in ignored `outputs/`, refines units to roughly 2–2.5 seconds, and fits the small pose matcher locally. Three Korean example utterances use an explicit translation fixture before English retrieval; English examples run directly. Choose an example to inspect the translation and selected sequence, then click **Play speech + gesture**. Stop cancels speech, and scrubbing previews a pose. The first launch also downloads pinned Three.js modules. Public recordings and fitted weights remain local.
 
 The 3D presentation uses shared Three.js avatar components and bundled fictional CC0 characters. The paper-specific algorithms and data adapters live in this repository.
+
+
+To replace the demo motion with an existing processed BEAT take, run `python scripts/prepare_beat_demo.py --processed /path/to/processed/beat`, then restart the server. Use `--rebuild --epochs 80` to regenerate the public sample and refit the small adapter. For a larger bank, the documented full-data CLI below retains the paper-specific input contracts.
 
 <!-- demo-preview:end -->
 
@@ -74,7 +78,7 @@ The 3D presentation uses shared Three.js avatar components and bundled fictional
 
 <!-- implementation-guide -->
 
-For an immediate browser example after installation, run `python scripts/prepare_viewer.py --out static/vendor` and `python scripts/demo_server.py --example`, then open the printed URL. Enter `결과를 보여 주세요` with language `ko` to see the explicit example translation and clustered motion retrieval. Author-created motion and illustrative vectors are labeled as examples; the prepared-data path below trains and loads GestureCLR.
+The default browser path is the prepared BEAT demo above. The older `python scripts/demo_server.py --example` path, when the prepared BEAT cache is absent, remains an offline fixture with author-created motion, illustrative vectors, and an explicit Korean translation. The prepared-data commands below retain the full training and retrieval contracts.
 
 ```bash
 python -m pip install -e .
@@ -82,7 +86,7 @@ python scripts/prepare_viewer.py --out static/vendor
 python scripts/demo_server.py --example
 ```
 
-Independent educational reimplementation of *Expanding Multilingual Co-Speech Interaction: The Impact of Enhanced Gesture Units in Text-to-Gesture Synthesis for Digital Humans* (Ali et al., IEEE Access 2025, DOI: [10.1109/ACCESS.2025.3596328](https://doi.org/10.1109/ACCESS.2025.3596328)). It follows the paper's actual multilingual design: translate input to English, then run English Sentence-BERT rule retrieval over GestureCLR-matched and clustered motion units. It does not redesign the system as a multilingual encoder.
+Independent educational reimplementation of *Expanding Multilingual Co-Speech Interaction: The Impact of Enhanced Gesture Units in Text-to-Gesture Synthesis for Digital Humans* (Ali et al., IEEE Access 2025, DOI: [10.1109/ACCESS.2025.3596328](https://doi.org/10.1109/ACCESS.2025.3596328)). It follows the paper's actual multilingual design: translate input to English, then run English Sentence-BERT rule retrieval over GestureCLR-matched and clustered motion units. It does not redesign the system as a multilingual encoder. Its matching lineage follows [Wild Pose Matching](https://github.com/ghazanPK/wild-pose-matching); [RIDGE](https://github.com/ghazanPK/ridge) later adds strong-rule and learned fallback routing.
 
 ### Setup and data contract
 

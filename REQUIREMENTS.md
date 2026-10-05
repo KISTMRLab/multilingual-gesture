@@ -22,7 +22,7 @@ The repository must extract units, train GestureCLR, mine an English rule map, a
 
 ## Interactive data handoff
 
-The browser queries the existing retrieval implementation and renders the selected motion frames with a pinned local Three.js module. Its immediate example mode is author-created motion plus explicitly illustrative, untrained vectors. Production mode accepts the documented public BVH/timed-transcript preparation outputs, real local encoder assets and trained checkpoints as appropriate. The preparation adapter preserves motion/transcript alignment and declares skeleton/FPS assumptions; it does not fabricate annotations or evaluation results. Speech is optional and replaceable (Kokoro-82M English/faster-whisper small CPU INT8, with browser voice/typed-input alternatives). Verification must cover clip serialization and algorithm routing, with model quality evaluation deferred to user-prepared public data.
+`scripts/start_demo.py` downloads one official BEAT BVH/TextGrid take, builds a local nine-clip bank and paired windows, refines clips to roughly 2–2.5 seconds, and fits the small pose matcher in ignored outputs. Three Korean inputs have explicit English translations in the bundled fixture; arbitrary Korean text still needs a supplied translation. The English retrieval text and selected routes remain visible. The small demo uses its own 30 FPS source clips and does not establish multilingual translation or gesture quality. The older `--example` path remains an explicitly authored offline fixture. Speech is optional; recordings and fitted weights are not bundled.
 
 ## Bundled fictional avatar substitution
 
