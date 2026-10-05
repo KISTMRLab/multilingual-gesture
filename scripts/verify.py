@@ -76,6 +76,12 @@ def main() -> None:
     run_cli("retrieve", "--rules", out / "cli-library.rules.jsonl", "--clusters", out / "cli-library.clusters.npz", "--source-language", "ko", "--translations", out / "translations.json", "--text", "결과를 보여 주세요", "--sbert", out / "tiny-sbert", "--seed", 11, "--output", out / "cli-sequence.json")
     cli_result = json.loads((out / "cli-sequence.json").read_text(encoding="utf-8"))
     if not cli_result["gestures"]: raise RuntimeError("installed CLI produced no gestures")
+    long_text = " ".join(["Welcome to the demonstration and thank you for joining us today."] * 4)
+    run_cli("retrieve", "--rules", out / "cli-library.rules.jsonl", "--clusters", out / "cli-library.clusters.npz",
+            "--text", long_text, "--sbert", out / "tiny-sbert", "--min-similarity", 0.99, "--idle-id", "idle",
+            "--audio-seconds", 16, "--output", out / "cli-long-sequence.json")
+    long_result = json.loads((out / "cli-long-sequence.json").read_text(encoding="utf-8"))
+    if len(long_result["chunks"]) < 2: raise RuntimeError(">30-word input was not split into sentence chunks")
     print(json.dumps({"loss": float(loss.detach()), "extracted_units": len(units), "gestures": len(gestures), "output": str(out)}))
 
 

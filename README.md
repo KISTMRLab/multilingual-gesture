@@ -108,37 +108,84 @@ This generates every documented array plus a local 384-D SentenceTransformer fix
 
 ### Prepare data and launch the multilingual demo
 
-`scripts/prepare_public_data.py` converts a licensed BVH plus timed JSONL words to 15 FPS neck-centered paired units, an English `wild.npz` projected-pose proxy and `speaker_motion.npy`. Use at least six seconds and retarget your skeleton to the script's documented joint names. A real wild-video input must replace the proxy with aligned video-estimated 2D pose and English text. Translate non-English queries with your own licensed service and save exact source-text to English-text mappings in `data/translations.json`; the demo refuses untranslated input.
+`scripts/prepare_public_data.py` converts one licensed BVH take plus timed JSONL words or a BEAT TextGrid to 15 FPS neck-centered data:
+- `units.npz`: library units from Algorithm 1 over the continuous take, with true `lengths`;
+- `pairs.npz`: 3-second paired 2D/3D windows for GestureCLR training;
+- `wild.npz`: an English projected-pose proxy;
+- `speaker_motion.npy`: the continuous take.
+
+IDs are `<take>:<start>-<end>`, and every row stores `speakers`. Run the script once per take; `train`, `mine` and the demo accept several output files. Use at least six seconds of motion and retarget your skeleton to the script's documented joint names. The proxy comes from the same take, so for meaningful mining replace it with held-out speakers or aligned video-estimated 2D pose with English text.
 
 ```bash
-python scripts/prepare_public_data.py --bvh data/licensed_motion.bvh --transcript data/english_words.jsonl --output-dir data/prepared
-multigesture train --pairs data/prepared/pairs.npz --epochs 20 --output checkpoints/gestureclr.pt
-multigesture mine --wild data/prepared/wild.npz --units data/prepared/units.npz --checkpoint checkpoints/gestureclr.pt --clusters 10 --output-prefix outputs/library
+python scripts/prepare_public_data.py --bvh data/1_wayne_0_1_1.bvh --transcript data/1_wayne_0_1_1.TextGrid --speaker wayne --output-dir data/prepared/1_wayne_0_1_1
+multigesture train --pairs data/prepared/*/pairs.npz --preset demo --output checkpoints/gestureclr.pt
+multigesture mine --wild data/prepared/*/wild.npz --units data/prepared/*/units.npz --checkpoint checkpoints/gestureclr.pt --clusters 10 --output-prefix outputs/library
 python scripts/prepare_viewer.py --out static/vendor
-python scripts/demo_server.py --data-dir data/prepared --rules outputs/library.rules.jsonl --clusters outputs/library.clusters.npz --translations data/translations.json
+python scripts/demo_server.py --data-dir data/prepared/1_wayne_0_1_1 --units data/prepared/*/units.npz --rules outputs/library.rules.jsonl --clusters outputs/library.clusters.npz --translations data/translations.json --min-similarity 0.3
 ```
 
-The browser shows source text, the supplied English translation, six-word rule lookup, cluster choice, similarity and actual BVH-derived joint frames. It never routes non-English text directly into Sentence-BERT. Batch retrieval uses `multigesture retrieve`; `scripts/export_playback.py` joins its sequence to `units.npz`. A short local training run only checks that the paired-projection method learns from the user's data; it does not reproduce the paper's evaluation. `scripts/verify.py` uses random arrays and a local illustrative text encoder.
+The browser shows:
+- the source text and its English translation;
+- the six-word rule lookup, cluster choice and similarity;
+- idle slots below the similarity floor;
+- the actual BVH-derived joint frames, trimmed to each unit's true length.
+
+Non-English text is never routed directly into Sentence-BERT. Prepared mode imports this repository's `src/` package, not the vendored stand-in copy. Batch retrieval uses `multigesture retrieve`; `scripts/export_playback.py` joins its sequence to `units.npz`, honouring unit `lengths` and each slot's `blend_frames`. A short local training run only checks that the paired-projection method learns from the user's data; it does not reproduce the paper's evaluation. `scripts/verify.py` uses random arrays and a local illustrative text encoder.
+
+### Translation
+
+`--translator` selects the client that implements the `Translator` protocol in `src/multilingual_gesture/translate.py`. The paper used Naver Papago; any of these can stand in for it:
+
+| `--translator` | Behaviour |
+|---|---|
+| `dict` (default) | Exact source-text → English map from `--translations` JSON. Unlisted text fails. |
+| `http` | `--translator-url` endpoint. `--translator-api openai` (default) posts a chat completion with `--translator-model`; `--translator-api libretranslate` posts `{q, source, target}`. A key is read from the variable named by `--translator-api-key-env`, if set. |
+| `local` | `--mt-model-path` points to a user-downloaded Hugging Face MT model directory, for example `opus-mt-ko-en`, or to a JSON map such as `{"ko->en": dir}`. Requires `transformers`. Files are loaded with `local_files_only`. |
+
+Retrieval output carries `english_text` for gesture lookup, `tts_text` (the source chunk, or its translation when `--tts-language` differs) for speech, and per-gesture English and TTS word spans.
 
 The [wild pose-matching poster](https://github.com/ghazanPK/wild-pose-matching) introduces this GestureCLR rule-mining path; [RIDGE](https://github.com/ghazanPK/ridge) later uses a GestureCLR-derived motion branch. These are research links, not software imports.
 
 Prepare public data yourself. [Talking With Hands](https://github.com/facebookresearch/TalkingWithHands32M) can provide paired 3D motion for GestureCLR training; [BEAT](https://pantomatrix.github.io/BEAT/) is a public replacement for timed text/motion experiments. Follow each dataset's request process and license. Wild video data must be content you may download/process. No paper data, Korean-speaker capture, Papago credentials, model weights, or reported 2,035-unit/210,000-rule artifact is bundled.
 
-All motion is 15 FPS, root/neck centered, fixed joint order, and flattened as `[N,F,D]`. Training `pairs.npz` has aligned `pose2d` and `motion3d`; `units.npz` has `motion3d` and string `ids`; `wild.npz` has three-second `pose2d` and aligned English `texts`. Translation JSON maps each exact source string to its English translation; generate it with a translation service you are licensed to use.
+All motion is 15 FPS, root/neck centered, fixed joint order, and flattened as `[N,F,D]`:
+- Training `pairs.npz` has aligned `pose2d` and `motion3d`.
+- `units.npz` has `motion3d` and string `ids`.
+- `wild.npz` has three-second `pose2d` and aligned English `texts`.
+- Optional `lengths` (valid frames) and `speakers` arrays are honoured everywhere. Padded frames are masked in the encoders during training and mining.
+
+Every array argument takes several files or a manifest: a `.json` list of paths or `{"path", "speaker", "take"}` objects, or a `.txt` list. `--speaker`, `--unit-speaker` and `--wild-speaker` filter by speaker. Translation JSON maps each exact source string to its English translation; generate it with a translation service you are licensed to use.
 
 ```bash
-multigesture extract-units --motion data/speaker_motion.npy --variance 0.002 --closure 0.3 --output outputs/units.npz
-multigesture train --pairs data/pairs.npz --output checkpoints/gestureclr.pt
-multigesture mine --wild data/wild.npz --units data/units.npz --checkpoint checkpoints/gestureclr.pt --output-prefix outputs/library --clusters 100
-multigesture retrieve --rules outputs/library.rules.jsonl --clusters outputs/library.clusters.npz --source-language ko --translations data/translations.json --text "안녕하세요 여러분" --output outputs/sequence.json
+multigesture extract-units --motion data/take_a.npy data/take_b.npy --variance auto --output outputs/units.npz
+multigesture train --pairs data/pairs.npz --preset paper --output checkpoints/gestureclr.pt --history outputs/train-history.json
+multigesture mine --wild data/wild.npz --units outputs/units.npz --checkpoint checkpoints/gestureclr.pt --output-prefix outputs/library --clusters 100
+multigesture retrieve --rules outputs/library.rules.jsonl --clusters outputs/library.clusters.npz --source-language ko --translations data/translations.json --text "안녕하세요 여러분" --min-similarity 0.3 --idle-id idle --audio-seconds 2.4 --output outputs/sequence.json
 python -m pytest
 ```
 
-Outputs keep source/English text, semantic similarity, cluster ID, chosen unit ID, and the paper's five-frame blend hint. Tune variance and closure thresholds on a development subset; `100` clusters is a paper setting, not a universal optimum.
+**Algorithm 1** (`extract-units`) scores every 2–3 s clip by its start/end pose distance. Clips are taken in order of minimal distance and removed from the sequence. Each becomes a unit if its variance passes the threshold. Closure and variance are measured after dividing by the take's body scale, so thresholds are unit-free: the same values work for centimetre BEAT data and metre-scale data.
+- `--variance auto` replaces the paper's hand-picked elbow with the elbow of the sorted log-variance curve.
+- `--variance 0.002 --closure 0.3` are fixed alternatives.
+- On the public BEAT take `1_wayne_0_1_1`, both settings yield about 20 units from 69 s.
+
+**Training** follows the paper: AdamW, lr 5×10⁻⁴, weight decay 10⁻⁴, cosine annealing and NT-Xent.
+- Each 2D sample draws one condition: clean; Gaussian noise with variance 0.001, 0.01 or 0.1 (standard deviation √variance, on scale-normalised poses); or the 30-in-45 temporal shift with mean fill or zero fill. The shift takes a random 30-frame source segment and places it at offset 1–15.
+- `--augment` can add the combined `noise_shift` condition.
+- A validation split (`--val-fraction`) reports loss and top-1 matching. The best validation checkpoint is kept.
+- `--preset paper` uses 1000 epochs at batch 512. `--preset demo` (the default) uses 300 epochs at batch 64; it reaches validation top-1 of 1.0 on the single public BEAT take.
+
+**Retrieval** runs the steps below. Outputs keep the source, English and TTS text, semantic similarity, cluster ID, chosen unit ID and the paper's five-frame blend hint.
+1. Input over 30 words is split into sentence chunks.
+2. Each chunk is translated and cut into six-word pieces.
+3. A unit is drawn at random from the best-matching cluster. Below `--min-similarity`, `--idle-id` plays instead.
+4. Durations are paced from `--audio-seconds`, then refined from `--word-timestamps` when the TTS engine supplies them.
+
+`100` clusters is a paper setting, not a universal optimum.
 
 ### Limits and license
 
-This repository starts after transcription, alignment, projection, and skeleton normalization. It does not call a commercial translation API, perform retargeting, recover the original speech service, or retarget the original avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed; datasets, pretrained models, translations, and animations keep their original licenses.
+This repository starts after transcription, alignment, projection, and skeleton normalization. It bundles no translation credentials or MT weights; the HTTP and local translator clients use services or models you configure. It does not perform retargeting, recover the original speech service, or retarget the original avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed; datasets, pretrained models, translations, and animations keep their original licenses.
 
 ### Citation
 

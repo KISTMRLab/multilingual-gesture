@@ -14,3 +14,4 @@ where=["src"]
 
 [project.optional-dependencies]
 speech = ["kokoro>=0.9.4", "soundfile>=0.12", "faster-whisper>=1.1"]
+mt = ["transformers>=4.30", "sentencepiece>=0.1.99"]
