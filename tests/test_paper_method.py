@@ -121,5 +121,11 @@ def test_prepared_server_library_and_queries(server):
     with urllib.request.urlopen(request, timeout=30) as response:
         idle = json.loads(response.read())
     assert idle["no_match"] is True and idle["slots"][0]["route"] == "idle_no_match"
-    with pytest.raises(urllib.error.HTTPError):  # untranslated non-English text is refused, as in the paper runtime
-        get(server + "/api/beat-query?" + urllib.parse.urlencode({"text": "번역 없는 문장", "language": "ko"}))
+    # Untranslated non-English text holds an idle pose with a note instead of failing the request.
+    untranslated = get(server + "/api/beat-query?" + urllib.parse.urlencode({"text": "번역 없는 문장", "language": "ko"}))
+    assert untranslated["no_match"] is True and untranslated["untranslated"] is True
+    slot = untranslated["slots"][0]
+    assert slot["route"] == "idle_no_match" and slot["rule_source"]["reason"] == "untranslated input"
+    assert "ko->en" in untranslated["note"] and "ko->en" in untranslated["data_label"]
+    assert untranslated["tts_text"] == "번역 없는 문장" and untranslated["english_text"] is None
+    assert untranslated["trace"]["untranslated"] is True and len(slot["frames"]) >= 15

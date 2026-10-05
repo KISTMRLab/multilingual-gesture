@@ -22,6 +22,23 @@ DATA_LABEL = "Public BEAT, disjoint speakers; projected BEAT motion stands in fo
 TRANSLATIONS = pm.ROOT / "examples" / "beat-translations.json"
 
 
+class Untranslated(Exception):
+    """The configured translator has no translation for this text."""
+
+
+class _GuardedTranslator:
+    """Report a missing translation as :class:`Untranslated` so the demo can idle instead of failing."""
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    def translate(self, text, source_language, target_language="en"):
+        try:
+            return self.inner.translate(text, source_language, target_language)
+        except ValueError as error:
+            raise Untranslated(str(error)) from error
+
+
 class PreparedDemo:
     def __init__(self, folder, args=None, encoder=None, translator=None):
         pm.use_repository_package("multilingual_gesture")
@@ -67,8 +84,11 @@ class PreparedDemo:
         language = pm.param(params, "source_language", pm.param(params, "language", "en"))
         seed = pm.param(params, "seed", self.manifest["seed"], int)
         floor = pm.param(params, "min_similarity", self.manifest["min_similarity"], float)
-        out = multilingual_retrieve(text, language, self.translator, self.rules, self.encode, self.groups, seed,
-                                    floor, "idle", 30, pm.param(params, "tts_language"))
+        try:
+            out = multilingual_retrieve(text, language, _GuardedTranslator(self.translator), self.rules, self.encode,
+                                        self.groups, seed, floor, "idle", 30, pm.param(params, "tts_language"))
+        except Untranslated as error:
+            return self._untranslated(text, language, floor, seed, str(error))
         slots = []
         for g in out["gestures"]:
             if g["idle"]:
@@ -98,4 +118,20 @@ class PreparedDemo:
                                joints=pm.ingest().UPPER_BODY,
                                extra={"english_text": out["english_text"], "source_language": language,
                                       "tts_text": out["tts_text"], "tts_language": out["tts_language"],
+                                      "rule_count": len(self.rules), "cluster_count": len(self.groups), "seed": seed})
+
+    def _untranslated(self, text, language, floor, seed, detail):
+        """Hold an idle pose when the translator has no English for the input (no gesture is guessed)."""
+        note = (f"No {language}->en translation for this text, so the avatar holds an idle pose. Add the sentence "
+                f"to examples/beat-translations.json or start the server with --translator http/local.")
+        slots = [pm.idle_slot(text, self.rest, "untranslated input", floor=floor, note=note)]
+        metrics = {k: self.manifest["metrics"].get(k) for k in ("rules", "library_units", "clusters",
+                                                                 "heldout_cross_view_top1", "heldout_chance")}
+        metrics.update(rule_count=len(self.rules), min_similarity=floor, learned_rule_usage=0)
+        return pm.query_result(slots, algorithm=ALGORITHM, data_label=f"{DATA_LABEL} · {note}", metrics=metrics,
+                               trace={"input": text, "retrieval_text": None, "seed": seed, "translation": None,
+                                      "untranslated": True, "translator_error": detail, "chunks": []},
+                               joints=pm.ingest().UPPER_BODY,
+                               extra={"english_text": None, "source_language": language, "tts_text": text,
+                                      "tts_language": language, "note": note, "untranslated": True,
                                       "rule_count": len(self.rules), "cluster_count": len(self.groups), "seed": seed})

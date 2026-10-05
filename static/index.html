@@ -13,7 +13,9 @@ input,select{width:100%;color:#eaf2ff;background:#0f192b;border:1px solid #536b8
 button.secondary{background:#334963;color:#eaf2ff}#status{min-height:2em;color:#9bd6b0}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{padding:8px;border-bottom:1px solid #30445e;text-align:left;vertical-align:top}
 #trace{max-height:270px;overflow:auto}.small{font-size:.86rem;color:#a8b7c9}#scrub{width:100%}
-@media(max-width:820px){.layout{grid-template-columns:1fr}#stage{height:360px}header{display:block}}
+.layout>*{min-width:0}td{overflow-wrap:anywhere;word-break:break-word}#summary,#status,#frame-label{overflow-wrap:anywhere}.controls>*{max-width:100%}button{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:820px){.layout{grid-template-columns:minmax(0,1fr)}#stage{height:360px}header{display:block}}
+@media(max-width:520px){body{padding:16px}.card{padding:14px}}
 </style></head><body data-mode="multilingual">
 <header><div><h1>Multilingual gesture retrieval</h1><p>Translate the sample text for retrieval, refine recorded gesture units, and play the selected BEAT sequence.</p></div><a href="https://github.com/ghazanPK/multilingual-gesture#implementation-and-usage">Data guide</a></header>
 <main class="layout"><section class="card"><div id="stage" aria-label="3D motion viewer"></div><label for="scrub">Motion frame</label><input id="scrub" type="range" min="0" max="0" value="0"><div class="controls"><button id="play">Pause</button><button id="speak" class="secondary">Speak query</button><select id="speech-backend" aria-label="Speech backend"><option value="browser">Browser voice</option><option value="kokoro">Local Kokoro</option></select></div><p class="small" id="frame-label">Run a query to load motion.</p></section>
