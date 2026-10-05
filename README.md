@@ -40,7 +40,7 @@ The system extracts text and 2D pose from English monologue videos, matches thos
 
 ## Explore the implementation
 
-Unit extraction, contrastive pose matching, clustered English rules and translation-first retrieval. Public motion replaces the institute's captured library.
+Algorithm 1 unit extraction, contrastive pose matching, clustered English rules and translation-first retrieval through a pluggable translator, with a BEAT route on disjoint speakers. Public motion replaces the institute's captured library.
 
 This repository contains independently written research code. The institute's original source, datasets and trained models are not distributed. Public-data preparation, commands, assumptions and checks are documented below and in [REQUIREMENTS.md](REQUIREMENTS.md).
 
@@ -65,10 +65,11 @@ python -m pip install -r scripts/requirements-demo.txt
 python scripts/start_demo.py
 ```
 
-Open **http://127.0.0.1:8080/**. First launch downloads one official BEAT BVH and matching TextGrid, prepares nine clips and disjoint paired windows in ignored `outputs/`, refines units to roughly 2–2.5 seconds, and fits the small pose matcher locally. Three Korean example utterances use an explicit translation fixture before English retrieval; English examples run directly. Choose an example to inspect the translation and selected sequence, then click **Play speech + gesture**. Stop cancels speech, and scrubbing previews a pose. The first launch also downloads pinned Three.js modules. Public recordings and fitted weights remain local.
+Open **http://127.0.0.1:8080/**. First launch downloads one official BEAT BVH and matching TextGrid, prepares nine clips and disjoint paired windows in ignored `outputs/`, extracts Algorithm 1 units of roughly 2–2.5 seconds, and fits the small GestureCLR pose matcher locally. Non-English input passes through a `Translator` (by default an explicit dictionary fixture covering three Korean example utterances) before English retrieval; English examples run directly. Text matching uses Sentence-BERT when `BEAT_SBERT_MODEL` names a local model folder and a TF-IDF fallback otherwise; each response names its text encoder, and text without a match plays an explicit idle slot. Choose an example to inspect the translation and selected sequence, then click **Play speech + gesture**. Stop cancels speech, and scrubbing previews a pose. The first launch also downloads pinned Three.js modules. Public recordings and fitted weights remain local.
 
 The 3D presentation uses shared Three.js avatar components and bundled fictional CC0 characters. The paper-specific algorithms and data adapters live in this repository.
 
+**Paper method on BEAT.** When a BEAT source is configured (`BEAT_PROCESSED_ROOT` for a processed collection, `BEAT_RAW_ROOT` for raw `beat_english_v0.2.1` BVH/TextGrid, or a copy under `data/beat/`) and a local Sentence-BERT folder exists (`SBERT_MODEL`, or `models/all-MiniLM-L6-v2`), `scripts/start_demo.py` first runs `scripts/prepare_paper_method.py`, which trains or mines with this repository's own pipeline on disjoint BEAT speakers and caches the result under ignored `outputs/paper-method/`. The same viewer then serves that prepared method with its library and suggested queries. Without the data the launcher serves the small demo adapter above; `--skip-paper-method` forces it. See [Reproduce with BEAT](#reproduce-with-beat).
 
 To replace the demo motion with an existing processed BEAT take, run `python scripts/prepare_beat_demo.py --processed /path/to/processed/beat`, then restart the server. Use `--rebuild --epochs 80` to regenerate the public sample and refit the small adapter. For a larger bank, the documented full-data CLI below retains the paper-specific input contracts.
 
