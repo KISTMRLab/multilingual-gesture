@@ -1,6 +1,7 @@
 data/
 outputs/
 checkpoints/
+models/
 *.pt
 *.npy
 *.npz

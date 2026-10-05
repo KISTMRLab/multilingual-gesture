@@ -88,6 +88,63 @@ python scripts/demo_server.py --example
 
 Independent educational reimplementation of *Expanding Multilingual Co-Speech Interaction: The Impact of Enhanced Gesture Units in Text-to-Gesture Synthesis for Digital Humans* (Ali et al., IEEE Access 2025, DOI: [10.1109/ACCESS.2025.3596328](https://doi.org/10.1109/ACCESS.2025.3596328)). It follows the paper's actual multilingual design: translate input to English, then run English Sentence-BERT rule retrieval over GestureCLR-matched and clustered motion units. It does not redesign the system as a multilingual encoder. Its matching lineage follows [Wild Pose Matching](https://github.com/ghazanPK/wild-pose-matching); [RIDGE](https://github.com/ghazanPK/ridge) later adds strong-rule and learned fallback routing.
 
+### Reproduce with BEAT
+
+`scripts/prepare_paper_method.py` runs this repository's full pipeline on public [BEAT](https://pantomatrix.github.io/BEAT/) motion, then serves the result in the browser viewer. Disjoint speakers take the paper's three roles:
+
+| Role | Default speakers | Used for |
+|---|---|---|
+| `library` | 2 | Continuous 3D motion → Algorithm 1 units (`multigesture extract-units --variance auto`) |
+| `train` | 2 | 3 s windows: clean 3D plus a 2D projection at a random yaw within ±30° → GestureCLR with the paper's augmentation (`multigesture train`) |
+| `wild` | 2 | Held-out 3 s windows with their English transcripts → unit matching, Bisecting K-Means and the English rule map (`multigesture mine`). The windows are projected through a camera at yaw 20° and pitch 5°, then corrupted like OpenPose tracks: noise, ±1-frame jitter and 5% joint dropout. |
+
+Roles are assigned per speaker with a fixed `--seed`. `--role library=1,2 --role train=0.5 --role wild=rest` overrides them.
+
+**1. Sentence-BERT, once.** The hook never downloads a model. Save `all-MiniLM-L6-v2` locally (about 90 MB):
+
+```bash
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2').save('models/all-MiniLM-L6-v2')"
+```
+
+`--sbert DIR` or the `SBERT_MODEL` environment variable selects another local copy.
+
+**2a. Processed OmniMo collection.** The collection is laid out as `<root>/<speaker>/{meta.json,motion.npz}`:
+
+```bash
+python scripts/prepare_paper_method.py --processed /path/to/processed/beat
+python scripts/demo_server.py --prepared outputs/paper-method/<key> --port 8080
+```
+
+The last line of standard output is JSON whose `server_args` give the exact prepared folder.
+
+**2b. Raw BEAT from Hugging Face.** Download BVH and TextGrid pairs from the official dataset [`H-Liu1997/BEAT`](https://huggingface.co/datasets/H-Liu1997/BEAT) into `data/beat/beat_english_v0.2.1/<speaker>/`. Each BVH is about 20 MB:
+
+```bash
+base=https://huggingface.co/datasets/H-Liu1997/BEAT/resolve/main/beat_english_v0.2.1/beat_english_v0.2.1
+for take in 1_wayne_0_1_1 1_wayne_0_2_2 2_scott_0_1_1 2_scott_0_2_2 3_solomon_0_3_3 3_solomon_0_4_4 \
+            4_lawrence_0_2_2 4_lawrence_0_3_3 5_stewart_0_1_1 5_stewart_0_2_2 6_carla_0_2_2 6_carla_0_3_3; do
+  spk=${take%%_*}; mkdir -p data/beat/beat_english_v0.2.1/$spk
+  for ext in bvh TextGrid; do curl -fL -o data/beat/beat_english_v0.2.1/$spk/$take.$ext $base/$spk/$take.$ext; done
+done
+python scripts/prepare_paper_method.py --beat-root data/beat/beat_english_v0.2.1
+```
+
+**3. Translation.** The prepared server translates non-English input before retrieval, as the paper does. By default it uses the exact-text map in `examples/beat-translations.json`, whose Korean examples appear as suggested queries. For free text, start the server with one of the [translators](#translation), for example `python scripts/demo_server.py --prepared outputs/paper-method/<key> --translator local --mt-model-path models/opus-mt-ko-en`.
+
+**Launcher.** `python scripts/start_demo.py` runs this hook after the shared BEAT demo preparation.
+- **Source.** It looks in `--processed` or `--beat-root`, then `BEAT_PROCESSED_ROOT` or `BEAT_RAW_ROOT`, then `data/beat/processed` or `data/beat/beat_english_v0.2.1`.
+- **Missing input.** Without a source or Sentence-BERT, it prints the next step and the default demo starts unchanged.
+- **Cache.** Results are cached in ignored `outputs/paper-method/<settings hash>/`. A repeat launch with the same settings returns at once; `--force` rebuilds.
+
+**Demo scale and paper preset.**
+- **Demo (default).** Speakers 1–6, two takes each, `--preset demo`: 300 epochs at batch 64, and about one cluster per four units. On a CPU it takes two to three minutes. One local run on the processed collection gave 91 units, 80 training pairs, 88 English rules over 23 clusters, and a held-out cross-view top-1 of 0.18 against a chance of 0.011 (88 windows).
+- **Paper preset.** `--speakers all --max-takes-per-speaker 0 --preset paper` trains 1000 epochs at batch 512 with 100 clusters.
+- **Tuning.** `--epochs`, `--clusters` and `--variance` adjust either.
+
+**Viewer.** `/api/beat-library` lists the library units and the stored metrics. Its suggested queries include the Korean examples, English rule phrases and held-out probes; the probes are library-speaker transcripts that never became rules. `/api/beat-query` returns the source, English and TTS text, and for each six-word chunk the unit frames, cluster, route and score. The route is `learned_pose_rule`, or `idle_no_match` below the 0.2 similarity floor (`min_similarity`).
+
+**Limits.** Projected BEAT motion stands in for wild video and OpenPose output; it is not the paper's data, and BEAT speech is English, so the Korean path is translation followed by English retrieval only. The held-out metric checks whether a corrupted 2D window finds its own 3D window among the held-out windows; it is not a paper benchmark.
+
 ### Setup and data contract
 
 ```bash
