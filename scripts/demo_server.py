@@ -75,7 +75,7 @@ def make_server(a):
         library_npz = np.load(a.data_dir / "units.npz")
         library = {str(k): v for k, v in zip(library_npz["ids"], library_npz["motion3d"])}
         groups = {int(k): [str(x) for x in d["ids"][d["labels"] == k]] for k in np.unique(d["labels"])}
-        encoder = SentenceTransformer(a.sbert or "all-MiniLM-L6-v2")
+        encoder = SentenceTransformer(pm.find_sbert(a.sbert)[0] or "all-MiniLM-L6-v2")
         def query(text, params):
             seed = int(params.get("seed", [str(a.seed)])[0])
             sequence = retrieve(text, rules, lambda x: encoder.encode(x, normalize_embeddings=True), groups, seed)
@@ -95,7 +95,7 @@ def make_server(a):
             part, part_lengths = load_library(Path(units_path))
             library.update(part); lengths.update(part_lengths)
         groups = {int(k): [str(x) for x in d["ids"][d["labels"] == k]] for k in np.unique(d["labels"])}
-        encoder = SentenceTransformer(a.sbert or "all-MiniLM-L6-v2")
+        encoder = SentenceTransformer(pm.find_sbert(a.sbert)[0] or "all-MiniLM-L6-v2")
         translator = translator_from_args(a)
         def query(text, params):
             language = params.get("language", ["en"])[0]
@@ -125,7 +125,7 @@ def make_server(a):
         ck = torch.load(a.checkpoint, map_location="cpu", weights_only=True)
         model = TextMotionModel(ck["text_dim"], ck["motion_dim"])
         model.load_state_dict(ck["state"]); model.eval()
-        encoder = SentenceTransformer(a.sbert or "all-MiniLM-L6-v2")
+        encoder = SentenceTransformer(pm.find_sbert(a.sbert)[0] or "all-MiniLM-L6-v2")
         library_npz = np.load(a.data_dir / "train_pairs.npz")
         library = {str(k): v for k, v in zip(library_npz["ids"], library_npz["motion"])}
         latent = ck["motion_latents"].cpu().numpy().astype("float32")

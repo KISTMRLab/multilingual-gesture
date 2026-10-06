@@ -74,7 +74,7 @@ def test_raw_bvh_textgrid_route(tmp_path, prepared):
 
 
 def test_missing_source_or_sbert_is_not_ready(tmp_path, monkeypatch):
-    for name in (pm.ENV_PROCESSED, pm.ENV_RAW, pm.ENV_SBERT):
+    for name in (pm.ENV_PROCESSED, pm.ENV_RAW, *pm.ENV_SBERT_ORDER):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(pm, "ROOT", tmp_path)
     code, result = run(["--output-root", str(tmp_path / "out")])
@@ -82,7 +82,7 @@ def test_missing_source_or_sbert_is_not_ready(tmp_path, monkeypatch):
     monkeypatch.setattr(pm, "DEFAULT_SBERT_DIR", tmp_path / "missing")
     source = beat_fixture.make_processed(tmp_path / "p", speakers=("1", "2", "3"), seconds=6)
     code, result = run(["--processed", str(source), "--output-root", str(tmp_path / "out")])
-    assert result["ready"] is False and "save" in result["next_steps"][0].lower()
+    assert result["ready"] is False and "fetch_models.py" in result["next_steps"][0]
 
 
 @pytest.fixture(scope="module")
