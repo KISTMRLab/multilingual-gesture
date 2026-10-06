@@ -243,7 +243,7 @@ python -m pytest
 
 ### Limits and license
 
-This repository starts after transcription, alignment, projection, and skeleton normalization. It bundles no translation credentials or MT weights; the HTTP and local translator clients use services or models you configure. It does not perform retargeting, recover the original speech service, or retarget the original avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed; datasets, pretrained models, translations, and animations keep their original licenses.
+This repository starts after transcription, alignment, projection, and skeleton normalization. It bundles no translation credentials or MT weights; the HTTP and local translator clients use services or models you configure. It does not perform retargeting, recover the original speech service, or retarget the original avatar. Translation quality, timing, cultural appropriateness, and gesture semantics are separate failure modes; the paper's study does not prove equivalence for all languages. Code is MIT licensed ([LICENSE](LICENSE)); datasets, pretrained models, translations, and animations keep their original licenses.
 
 ### Citation
 
