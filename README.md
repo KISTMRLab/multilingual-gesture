@@ -65,11 +65,11 @@ python -m pip install -r scripts/requirements-demo.txt
 python scripts/start_demo.py
 ```
 
-Open **http://127.0.0.1:8080/**. First launch downloads one official BEAT BVH and matching TextGrid, prepares nine clips and disjoint paired windows in ignored `outputs/`, extracts Algorithm 1 units of roughly 2–2.5 seconds, and fits the small GestureCLR pose matcher locally. Non-English input passes through a `Translator` (by default an explicit dictionary fixture covering three Korean example utterances) before English retrieval; English examples run directly. Text matching uses Sentence-BERT when `BEAT_SBERT_MODEL` names a local model folder and a TF-IDF fallback otherwise; each response names its text encoder, and text without a match plays an explicit idle slot. Choose an example to inspect the translation and selected sequence, then click **Play speech + gesture**. Stop cancels speech, and scrubbing previews a pose. The first launch also downloads pinned Three.js modules. Public recordings and fitted weights remain local.
+Open **http://127.0.0.1:8080/**. First launch downloads one official BEAT BVH and matching TextGrid, prepares nine clips and disjoint paired windows in ignored `outputs/`, extracts Algorithm 1 units of roughly 2–2.5 seconds, and fits the small GestureCLR pose matcher locally. Non-English input passes through a `Translator` (by default an explicit dictionary fixture covering three Korean example utterances) before English retrieval; English examples run directly. Text matching uses Sentence-BERT all-MiniLM-L6-v2, which the launcher downloads once (about 92 MB) into ignored `models/`; `--offline` skips the download and `BEAT_SBERT_MODEL` or `SBERT_MODEL` selects another local model. Without a model a labelled TF-IDF fallback is used; each response names its text encoder, and text without a match plays an explicit idle slot. Choose an example to inspect the translation and selected sequence, then click **Play speech + gesture**. Stop cancels speech, and scrubbing previews a pose. The first launch also downloads pinned Three.js modules. Public recordings and fitted weights remain local.
 
 The 3D presentation uses shared Three.js avatar components and bundled fictional CC0 characters. The paper-specific algorithms and data adapters live in this repository.
 
-**Paper method on BEAT.** When a BEAT source is configured (`BEAT_PROCESSED_ROOT` for a processed collection, `BEAT_RAW_ROOT` for raw `beat_english_v0.2.1` BVH/TextGrid, or a copy under `data/beat/`) and a local Sentence-BERT folder exists (`SBERT_MODEL`, or `models/all-MiniLM-L6-v2`), `scripts/start_demo.py` first runs `scripts/prepare_paper_method.py`, which trains or mines with this repository's own pipeline on disjoint BEAT speakers and caches the result under ignored `outputs/paper-method/`. The same viewer then serves that prepared method with its library and suggested queries. Without the data the launcher serves the small demo adapter above; `--skip-paper-method` forces it. See [Reproduce with BEAT](#reproduce-with-beat).
+**Paper method on BEAT.** When a BEAT source is configured (`BEAT_PROCESSED_ROOT` for a processed collection, `BEAT_RAW_ROOT` for raw `beat_english_v0.2.1` BVH/TextGrid, or a copy under `data/beat/`) and the Sentence-BERT model is available (`models/all-MiniLM-L6-v2`, downloaded on first run, or `BEAT_SBERT_MODEL`/`SBERT_MODEL`), `scripts/start_demo.py` first runs `scripts/prepare_paper_method.py`, which trains or mines with this repository's own pipeline on disjoint BEAT speakers and caches the result under ignored `outputs/paper-method/`. The same viewer then serves that prepared method with its library and suggested queries. Without the data the launcher serves the small demo adapter above; `--skip-paper-method` forces it. See [Reproduce with BEAT](#reproduce-with-beat).
 
 To replace the demo motion with an existing processed BEAT take, run `python scripts/prepare_beat_demo.py --processed /path/to/processed/beat`, then restart the server. Use `--rebuild --epochs 80` to regenerate the public sample and refit the small adapter. For a larger bank, the documented full-data CLI below retains the paper-specific input contracts.
 
@@ -101,13 +101,13 @@ Independent educational reimplementation of *Expanding Multilingual Co-Speech In
 
 Roles are assigned per speaker with a fixed `--seed`. `--role library=1,2 --role train=0.5 --role wild=rest` overrides them.
 
-**1. Sentence-BERT, once.** The hook never downloads a model. Save `all-MiniLM-L6-v2` locally (about 90 MB):
+**1. Sentence-BERT.** `python scripts/start_demo.py` downloads `all-MiniLM-L6-v2` (about 92 MB) into the ignored `models/all-MiniLM-L6-v2` on first run; the hook itself never downloads. To fetch it without starting the demo:
 
 ```bash
-python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2').save('models/all-MiniLM-L6-v2')"
+python scripts/beat_demo/fetch_models.py
 ```
 
-`--sbert DIR` or the `SBERT_MODEL` environment variable selects another local copy.
+`--sbert DIR`, `BEAT_SBERT_MODEL` or `SBERT_MODEL` selects another local copy.
 
 **2a. Processed OmniMo collection.** The collection is laid out as `<root>/<speaker>/{meta.json,motion.npz}`:
 
